@@ -606,7 +606,14 @@ module Authorization
         object = contr.instance_variable_get(instance_var)
         unless object
           begin
-            object = load_object_model.find(contr.params[:id])
+            begin
+              object = load_object_model.find(contr.params[:id])
+            rescue
+              # Hacks:
+              # 1) updated query for use with Mongo/Mongoid 
+              # 2) to fascilitate getting user without relying on params[:id] 
+              object = load_object_model.where(:_id => contr.params[:id]).first || Authorization.current_user
+            end
           rescue RuntimeError => e
             contr.logger.debug("filter_access_to tried to find " +
                 "#{load_object_model} from params[:id] " +
